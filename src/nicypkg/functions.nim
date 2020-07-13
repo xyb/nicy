@@ -120,15 +120,15 @@ proc tilde*(path: string): string =
   else:
     result = path
 
-proc getCwd*(): string =
+proc getCwd*(suffix = ""): string =
   result = try:
-    getCurrentDir() & " "
+    getCurrentDir() & suffix
   except OSError:
     "[not found]"
 
-proc virtualenv*(): string =
+proc virtualenv*(suffix = ""): string =
   let env = getEnv("VIRTUAL_ENV")
-  result = extractFilename(env) & " "
+  result = extractFilename(env) & suffix
   if env.len == 0:
     result = ""
 
@@ -161,12 +161,16 @@ proc host*(): string =
 proc uidsymbol*(root, user: string): string =
   result = if getuid() == 0: root else: user
 
-proc returnCondition*(ok: string, ng: string, delimiter = "."): string =
-  result = fmt"%(?{delimiter}{ok}{delimiter}{ng})"
+proc numberCondition*(numberString, notZero, zero = "", suffix = ""): string =
+  if numberString.len > 0:
+    if numberString != "0" and notZero.len > 0:
+      result = notZero & suffix
+    elif numberString == "0" and zero.len > 0:
+      result = zero & suffix
 
-proc returnCondition*(ok: proc(): string, ng: proc(): string,
-    delimiter = "."): string =
-  result = returnCondition(ok(), ng(), delimiter)
+proc numberCondition*(numberString = "", notZero, zero = proc(): string = "",
+    suffix = ""): string =
+  result = numberCondition(numberString, notZero(), zero(), suffix)
 
 proc getGitDetachedBranch(): string =
   let (o, err) = execCmdEx("git describe --tags --always")
@@ -219,14 +223,14 @@ proc newGitStats*(): GitStats =
 proc dirty*(gs: GitStats): bool =
   (gs.untracked + gs.changed + gs.staged + gs.conflicted) > 1
 
-proc branch*(gs: GitStats, detachedPrefix = "", postfix = " "): string =
+proc branch*(gs: GitStats, detachedPrefix = "", suffix = ""): string =
   if gs.branchName.len > 0:
-    result = gs.branchName & postfix
+    result = gs.branchName & suffix
   if gs.detached and detachedPrefix.len > 0:
     result = detachedPrefix & result
 
 proc status*(gs: GitStats, ahead, behind, untracked, changed, staged,
-    conflicted, stash: string, separator, postfix = " "): string =
+    conflicted, stash: string, separator = " ", suffix = ""): string =
   var parts = newSeq[string]()
 
   template add(gs: GitStats, field: untyped, value: string, ss: seq[string]) =
@@ -245,5 +249,34 @@ proc status*(gs: GitStats, ahead, behind, untracked, changed, staged,
     add(gs, conflicted, conflicted, parts)
     add(gs, stash, stash, parts)
     result = parts.join(separator)
-    if result.len > 0 and postfix.len > 0:
-      result &= postfix
+    if result.len > 0 and suffix.len > 0:
+      result &= suffix
+
+proc jobs*(jobsNumber: string, suffix = ""): string =
+  let number = parseInt(jobsNumber)
+  if number > 0:
+    result = fmt"{number}&" & suffix
+  else:
+    result = ""
+
+proc runtime*(seconds: string, suffix = ""): string =
+  let total =
+    try:
+      parseInt(seconds)
+    except ValueError:
+      0
+  if total > 0:
+    if total > 86400:
+      let days = int(total / 86400)
+      result.add(fmt"{days}d")
+    if total > 3600:
+      let hours = int(total mod 86400 / 3600)
+      result.add(fmt"{hours}h")
+    if total > 60:
+      let minutes = int(total mod 3600 / 60)
+      result.add(fmt"{minutes}m")
+    let secs = total mod 60
+    result.add(fmt"{secs}s")
+    result.add(suffix)
+  else:
+    result = ""

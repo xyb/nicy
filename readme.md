@@ -99,22 +99,6 @@ let
 echo fmt"{tilde}{git}{nl}{prompt}"
 ```
 
-```nim
-# switching by return code
-
-import nicy, strformat
-
-let
-  prompt = returnCondition(ok = "👍", ng = "👎") & " "
-  tilde = color(tilde(getCwd()), cyan)
-  git = color(gitBranch() & gitStatus("*", ""), red)
-  nl = "\n"
-
-echo fmt"{tilde}{git}{nl}{prompt}"
-# ~ master
-# 👍 
-```
-
 If you like to know more details about git status, you may want to try the following powerful example which is including the number of untracked, modified, staged, conflicted and the number of commits your local branch is ahead, behind, etc:
 ```
 nim c -d:release examples/power.nim
@@ -162,7 +146,7 @@ If `path` starts with `/home/user`, it is replaced by a `~/`.
 **`getCwd(): string`**  
 Returns the full path of the current working directory, or returns the string `[not found]` if current path doesn’t exist. (eg: `rm -rf ../curpath`)
 
-**`virtualenv(): string`**  
+**`virtualenv(suffix = " "): string`**  
 Returns the current virtualenv name if in one.
 
 **`gitBranch(): string`**  
@@ -177,27 +161,33 @@ Returns the current username.
 **`host(): string`**  
 Returns the current hostname.
 
-**`returnCondition*(ok: string, ng: string, delimiter = "."): string`**  
-If the return code is `0` then returns `ok` string, otherwise `ng`.
+**`numberCondition*(numberString, notZero, zero = "", suffix = " "): string`**  
+If the return code is `0` then returns `zero` string, otherwise `notZero`.
 
-**`returnCondition*(ok: proc(): string, ng: proc(): string, delimiter = "."): string`**  
-Returns result of `ok` proc or `ng` proc.
-If the return code is `0` then this proc calls `ok` proc, otherwise calls `ng` proc.
+**`numberCondition*(numberString = "", notZero, zero = proc(): string = "", suffix = " ): string`**  
+Returns result of `zero` proc or `notZero` proc.
+If the return code is `0` then this proc calls `zero` proc, otherwise calls `notZero` proc.
 
 **`shellName*: string`**
 Contains the name of shell in which your prompt progoram is running.
 Currently it may be `zsh` or `bash`. 
 You can specify it during compilation using the switch `-d:zsh` or `-d:bash`, or you can let the program detect it automatically, which may slow it down by a few milliseconds.
 
+**`jobs*(jobsNumber: string, suffix = " "): string`**
+Returns the prompt string of the number of jobs.
+
+**`runtime*(seconds: string, suffix = " "): string`**
+Returns the prompt string of the last command's run time.
+
 #### GitStats API
 
 **`newGitStats*(): GitStats`**  
 Returns a `GitStats` object which contains the name of the local branch, the name of remote reference, number of commits your local branch is ahead or behind remote ref, number of untracked, modified, staged, conflicted, and the number of stashed changes. 
 
-**`branch*(gs: GitStats, detachedPrefix = "", postfix = " "): string`**  
+**`branch*(gs: GitStats, detachedPrefix = "", suffix = " "): string`**  
 Returns the current git branch name.
 
-**`status*(gs: GitStats, ahead, behind, untracked, changed, staged, conflicted, stash: string, separator, postfix = " "): string`**  
+**`status*(gs: GitStats, ahead, behind, untracked, changed, staged, conflicted, stash: string, separator, suffix = " "): string`**  
 Returns the git status string.
 
 **`dirty*(gs: GitStats): bool`**  
